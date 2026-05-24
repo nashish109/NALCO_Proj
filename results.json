@@ -1,1 +1,26 @@
-{"machine_status": "HEALTHY", "remaining_life": 166, "failure_risk": 48.12, "main_failure_factor": "RMS", "approx_failure_time": "0d 0h 13m 50s"}
+{
+  "machine_status": "RUNNING",
+  "remaining_life": 138559,
+  "failure_risk": 7.63,
+  "main_failure_factor": "vibration_sensor_mean_30",
+  "approx_failure_time": "8d 0h 26m 37s",
+  "early_warning_row": null,
+  "predicted_failure_row": null,
+  "early_warning_threshold_cycles": 18000.0,
+  "failure_threshold_cycles": 3000.0,
+  "model_name": "ridge",
+  "training_csv": "None",
+  "prediction_csv": "long_life_machine_dataset.csv",
+  "prediction_scale": 150000.0,
+  "validation_metrics": {
+    "mae": 811.7508417658785,
+    "rmse": 1000.7167512112005,
+    "r2": 0.9867063074001708
+  },
+  "prediction_metrics": {
+    "mae": 3181.534257347598,
+    "rmse": 3700.25495465791,
+    "r2": -2.5447365857926707
+  },
+  "shap_created": true
+}

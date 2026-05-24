@@ -1,168 +1,46 @@
-
-
-import time
 import json
+from pathlib import Path
 
+import pandas as pd
 import streamlit as st
 
-from PIL import Image
 
+st.set_page_config(page_title="Machine Breakdown Predictor", layout="wide")
+st.title("Machine Breakdown Prediction Dashboard")
 
-# ============================================================
-# PAGE CONFIG
-# ============================================================
+results_path = Path("results.json")
+predictions_path = Path("machine_failure_predictions.csv")
 
-st.set_page_config(
+if not results_path.exists():
+    st.error("Run python app.py first.")
+    st.stop()
 
-    page_title="AI Predictive Maintenance",
+data = json.loads(results_path.read_text(encoding="utf-8"))
 
-    layout="wide"
-)
+col1, col2, col3, col4 = st.columns(4)
+col1.metric("Current Status", data["machine_status"])
+col2.metric("Remaining Life", f'{data["remaining_life"]} cycles')
+col3.metric("Failure Risk", f'{data["failure_risk"]}%')
+col4.metric("Model", data["model_name"])
 
+st.info(f'Breakdown from latest row: {data["approx_failure_time"]}')
+st.warning(f'Early warning row: {data["early_warning_row"]} | Predicted breakdown row: {data["predicted_failure_row"]}')
+st.caption(f'Main sensor factor: {data["main_failure_factor"]}')
 
-# ============================================================
-# TITLE
-# ============================================================
+left, right = st.columns(2)
+with left:
+    st.subheader("Actual vs Predicted")
+    st.image("results/actual_vs_predicted.png", use_container_width=True)
+with right:
+    st.subheader("Feature Importance")
+    st.image("results/feature_importance.png", use_container_width=True)
 
-st.title(
-    "LIVE AI Predictive Maintenance Dashboard"
-)
+shap_path = Path("results/shap_summary.png")
+if shap_path.exists():
+    st.subheader("SHAP Explainability")
+    st.image(str(shap_path), use_container_width=True)
 
-st.markdown(
-    "Real-Time Machine Breakdown Forecasting"
-)
-
-
-# ============================================================
-# AUTO REFRESH
-# ============================================================
-
-REFRESH_TIME = 5
-
-
-# ============================================================
-# LOAD RESULTS
-# ============================================================
-
-with open(
-    "results.json",
-    "r",
-    encoding="utf-8"
-) as f:
-
-    data = json.load(f)
-
-
-# ============================================================
-# METRICS
-# ============================================================
-
-col1, col2, col3 = st.columns(3)
-
-
-with col1:
-
-    st.metric(
-        "Machine Status",
-        data["machine_status"]
-    )
-
-
-with col2:
-
-    st.metric(
-        "Remaining Life",
-        f'{data["remaining_life"]} cycles'
-    )
-
-
-with col3:
-
-    st.metric(
-        "Failure Risk",
-        f'{data["failure_risk"]}%'
-    )
-
-
-# ============================================================
-# FAILURE TIME
-# ============================================================
-
-st.info(
-    f'Approx Failure Time: '
-    f'{data["approx_failure_time"]}'
-)
-
-
-# ============================================================
-# FAILURE FACTOR
-# ============================================================
-
-st.warning(
-    f'Main Failure Factor: '
-    f'{data["main_failure_factor"]}'
-)
-
-
-# ============================================================
-# GRAPH 1
-# ============================================================
-
-st.subheader(
-    "📈 Actual vs Predicted Timeline"
-)
-
-image1 = Image.open(
-    "actual_vs_predicted.png"
-)
-
-st.image(
-    image1,
-    use_container_width=True
-)
-
-
-# ============================================================
-# GRAPH 2
-# ============================================================
-
-st.subheader(
-    "⚙️ Feature Importance"
-)
-
-image2 = Image.open(
-    "feature_importance.png"
-)
-
-st.image(
-    image2,
-    use_container_width=True
-)
-
-
-# ============================================================
-# GRAPH 3
-# ============================================================
-
-st.subheader(
-    "🧠 SHAP Explainability"
-)
-
-image3 = Image.open(
-    "shap_summary.png"
-)
-
-st.image(
-    image3,
-    use_container_width=True
-)
-
-
-# ============================================================
-# AUTO REFRESH
-# ============================================================
-
-time.sleep(REFRESH_TIME)
-
-st.rerun()
-
+if predictions_path.exists():
+    st.subheader("Prediction Table")
+    df = pd.read_csv(predictions_path)
+    st.dataframe(df.tail(150), use_container_width=True, hide_index=True)
