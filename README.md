@@ -2,7 +2,6 @@
 
 An AI-powered industrial monitoring and predictive maintenance platform developed using Python and Streamlit to analyze machine performance, detect anomalies, and predict potential failures through interactive dashboards and machine learning models.
 
----
 
 ## Features
 
@@ -47,7 +46,7 @@ NALCO_Proj/
 └── README.md
 ```
 
----
+
 
 ## Installation
 
@@ -81,7 +80,6 @@ streamlit run dashboard.py
 4. Visualize insights and trends  
 5. Generate maintenance analytics  
 
----
 
 ## Future Enhancements
 
