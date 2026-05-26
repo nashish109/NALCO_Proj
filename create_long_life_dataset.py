@@ -1,5 +1,10 @@
 import pandas as pd
 import numpy as np
+from pathlib import Path
+
+
+DATASETS_DIR = Path("datasets")
+DATASETS_DIR.mkdir(exist_ok=True)
 
 # Set random seed for reproducibility
 np.random.seed(42)
@@ -36,8 +41,9 @@ train_df = pd.DataFrame({
     'actual_remaining_life': actual_rul
 })
 
-train_df.to_csv('extended_training_dataset.csv', index=False)
-print("✅ Created extended_training_dataset.csv")
+extended_training_path = DATASETS_DIR / 'extended_training_dataset.csv'
+train_df.to_csv(extended_training_path, index=False)
+print(f"[OK] Created {extended_training_path}")
 print(f"   Samples: {len(train_df)}")
 print(f"   RUL range: {train_df['actual_remaining_life'].min():.0f} - {train_df['actual_remaining_life'].max():.0f}")
 print(f"   Vibration range: {train_df['vibration_sensor'].min():.3f} - {train_df['vibration_sensor'].max():.3f}")
@@ -70,8 +76,9 @@ test_df = pd.DataFrame({
     'actual_remaining_life': rul_test
 })
 
-test_df.to_csv('long_life_machine_dataset.csv', index=False)
-print("\n✅ Created long_life_machine_dataset.csv")
+long_life_path = DATASETS_DIR / 'long_life_machine_dataset.csv'
+test_df.to_csv(long_life_path, index=False)
+print(f"\n[OK] Created {long_life_path}")
 print(f"   Samples: {len(test_df)}")
 print(f"   Expected RUL range: {test_df['actual_remaining_life'].min():.0f} - {test_df['actual_remaining_life'].max():.0f}")
 

@@ -2,6 +2,7 @@ flask
 pandas
 numpy
 matplotlib
+scipy
 xgboost
 joblib
 shap

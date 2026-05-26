@@ -24,15 +24,17 @@ from sklearn.preprocessing import StandardScaler
 
 MODEL_PATH = Path("machine_breakdown_model.pkl")
 RESULTS_DIR = Path("results")
-PREDICTIONS_PATH = Path("machine_failure_predictions.csv")
+DATASETS_DIR = Path("datasets")
+PREDICTIONS_PATH = RESULTS_DIR / "machine_failure_predictions.csv"
 RESULTS_JSON = Path("results.json")
 
-DEFAULT_TRAIN_DATA = Path("simulated_training_machine_dataset.csv")
-DEFAULT_PREDICT_DATA = Path("simulated_testing_machine_dataset.csv")
+DEFAULT_TRAIN_DATA = DATASETS_DIR / "machine_vibration_training_dataset.csv"
+DEFAULT_PREDICT_DATA = DATASETS_DIR / "machine_vibration_testing_dataset.csv"
 
 TARGET_CANDIDATES = (
     "actual_remaining_life",
     "remaining_useful_life",
+    "remaining_useful_life_hours",
     "remaining_life",
     "rul",
 )
@@ -40,6 +42,7 @@ TARGET_CANDIDATES = (
 LEAK_OR_GENERATED_COLUMNS = {
     "actual_remaining_life",
     "remaining_useful_life",
+    "remaining_useful_life_hours",
     "remaining_life",
     "rul",
     "predicted_rul",
@@ -48,9 +51,14 @@ LEAK_OR_GENERATED_COLUMNS = {
     "prediction_error",
     "prediction",
     "failure_risk",
+    "failure_risk_score",
     "alert_level",
+    "breakdown_label",
+    "fault_label",
+    "anomaly_label",
     "predicted_breakdown_time",
     "predicted_breakdown_in_cycles",
+    "predicted_breakdown_in_hours",
     "timeline",
     "rms",
     "rollingmean",
@@ -104,7 +112,7 @@ def prompt_path(label: str, default: Path | None = None) -> Path:
     suffix = f" [{default}]" if default else ""
     while True:
         value = input(f"{label}{suffix}: ").strip().strip('"')
-        path = Path(value) if value else default
+        path = resolve_input_path(Path(value)) if value else default
         if path and path.exists():
             return path
         print("File not found. Please enter a valid CSV path.")
@@ -123,6 +131,8 @@ def prompt_float(label: str, default: float) -> float:
 
 def fill_interactive_args(args: argparse.Namespace) -> argparse.Namespace:
     print("\n========== MACHINE BREAKDOWN PREDICTOR ==========\n")
+    args.train_data = resolve_input_path(args.train_data)
+    args.predict_data = resolve_input_path(args.predict_data)
     
     # Only ask for training data if model doesn't exist or force-retrain is set
     if args.train_data is None:
@@ -145,6 +155,17 @@ def normalize_name(name: str) -> str:
     return name.strip().lower()
 
 
+def resolve_input_path(path: Path | None) -> Path | None:
+    if path is None:
+        return None
+    if path.exists():
+        return path
+    dataset_path = DATASETS_DIR / path.name
+    if dataset_path.exists():
+        return dataset_path
+    return path
+
+
 def find_target_column(df: pd.DataFrame) -> str:
     normalized = {normalize_name(col): col for col in df.columns}
     for candidate in TARGET_CANDIDATES:
@@ -154,6 +175,16 @@ def find_target_column(df: pd.DataFrame) -> str:
         "No RUL target column found. Add one of these columns to the training data: "
         + ", ".join(TARGET_CANDIDATES)
     )
+
+
+def infer_rul_unit(target_col: str | None) -> str:
+    if target_col and "hour" in normalize_name(target_col):
+        return "hours"
+    return "cycles"
+
+
+def unit_label(rul_unit: str) -> str:
+    return "hours" if rul_unit == "hours" else "cycles"
 
 
 def optional_target_column(df: pd.DataFrame) -> str | None:
@@ -306,6 +337,7 @@ def train_model(train_csv: Path, model_path: Path) -> Dict[str, object]:
         "feature_columns": list(X.columns),
         "sensor_columns": sensor_cols,
         "target_column": target_col,
+        "target_unit": infer_rul_unit(target_col),
         "training_csv": str(train_csv),
         "target_max": target_max,
         "validation_metrics": regression_metrics(y_valid_raw, validation_predictions),
@@ -334,12 +366,18 @@ def infer_prediction_scale(
     return float(max(len(predict_df), 1.0))
 
 
-def format_duration(cycles: float, seconds_per_cycle: float) -> str:
-    total_seconds = int(max(0.0, cycles) * seconds_per_cycle)
+def format_duration(total_seconds: float) -> str:
+    total_seconds = int(max(0.0, total_seconds))
     days, rem = divmod(total_seconds, 24 * 3600)
     hours, rem = divmod(rem, 3600)
     minutes, seconds = divmod(rem, 60)
     return f"{days}d {hours}h {minutes}m {seconds}s"
+
+
+def format_rul_duration(remaining_life: float, rul_unit: str, seconds_per_cycle: float) -> str:
+    if rul_unit == "hours":
+        return format_duration(remaining_life * 3600)
+    return format_duration(remaining_life * seconds_per_cycle)
 
 
 def status_from_rul(remaining_life: float, scale: float, early_warning_ratio: float) -> str:
@@ -357,6 +395,7 @@ def add_breakdown_timeline(
     predictions: pd.Series,
     *,
     scale: float,
+    rul_unit: str,
     seconds_per_cycle: float,
     early_warning_ratio: float,
 ) -> Dict[str, object]:
@@ -364,9 +403,13 @@ def add_breakdown_timeline(
     failure_threshold = max(5.0, scale * 0.02)
 
     output_df["Predicted_RUL"] = predictions.round(3)
-    output_df["Predicted_Breakdown_In_Cycles"] = predictions.round(3)
+    output_df["Predicted_RUL_Unit"] = unit_label(rul_unit)
+    if rul_unit == "hours":
+        output_df["Predicted_Breakdown_In_Hours"] = predictions.round(3)
+    else:
+        output_df["Predicted_Breakdown_In_Cycles"] = predictions.round(3)
     output_df["Predicted_Breakdown_Time"] = predictions.apply(
-        lambda value: format_duration(value, seconds_per_cycle)
+        lambda value: format_rul_duration(value, rul_unit, seconds_per_cycle)
     )
     output_df["Alert_Level"] = predictions.apply(
         lambda value: status_from_rul(value, scale, early_warning_ratio)
@@ -392,12 +435,12 @@ def add_breakdown_timeline(
         "early_warning_row": warning_index,
         "predicted_failure_row": failure_index,
         "early_warning_time_from_that_row": (
-            format_duration(float(predictions.iloc[warning_index]), seconds_per_cycle)
+            format_rul_duration(float(predictions.iloc[warning_index]), rul_unit, seconds_per_cycle)
             if warning_index is not None
             else None
         ),
         "predicted_failure_time_from_that_row": (
-            format_duration(float(predictions.iloc[failure_index]), seconds_per_cycle)
+            format_rul_duration(float(predictions.iloc[failure_index]), rul_unit, seconds_per_cycle)
             if failure_index is not None
             else None
         ),
@@ -429,44 +472,114 @@ def feature_importance(bundle: Dict[str, object], X: pd.DataFrame, y: pd.Series 
     )
 
 
+def disallowed_model_features(bundle: Dict[str, object]) -> List[str]:
+    disallowed = []
+    for col in bundle.get("feature_columns", []):
+        normalized = normalize_name(str(col))
+        if any(
+            normalized == blocked or normalized.startswith(f"{blocked}_")
+            for blocked in LEAK_OR_GENERATED_COLUMNS
+        ):
+            disallowed.append(str(col))
+    return disallowed
+
+
+def training_path_from_bundle(bundle: Dict[str, object]) -> Path | None:
+    value = bundle.get("training_csv")
+    if not value:
+        return None
+    path = resolve_input_path(Path(str(value)))
+    return path if path.exists() else None
+
+
+def cycle_axis(df: pd.DataFrame, length: int) -> Tuple[np.ndarray, str]:
+    cycle_candidates = (
+        "cycle",
+        "cycles",
+        "machine_cycle",
+        "cycle_number",
+        "timestamp",
+        "time",
+    )
+    normalized = {normalize_name(col): col for col in df.columns}
+
+    for candidate in cycle_candidates:
+        col = normalized.get(candidate)
+        if col is None:
+            continue
+        values = pd.to_numeric(df[col], errors="coerce")
+        if values.notna().all() and values.nunique() > 1:
+            return values.to_numpy(dtype=float), f"{col} (cycles)"
+
+    return np.arange(length, dtype=float), "Machine cycle"
+
+
+def smooth_line(
+    x_values: np.ndarray,
+    series: pd.Series,
+    window: int = 5,
+) -> Tuple[np.ndarray, np.ndarray]:
+    smoothed = series.reset_index(drop=True).rolling(window, min_periods=1).mean()
+    y = pd.to_numeric(smoothed, errors="coerce").ffill().bfill().fillna(0.0).to_numpy()
+    x = np.asarray(x_values, dtype=float)
+
+    if len(y) < 4 or np.unique(y).size < 2 or np.unique(x).size != len(x):
+        return x, y
+
+    dense_x = np.linspace(x.min(), x.max(), max(len(y) * 8, 120))
+    try:
+        dense_y = make_interp_spline(x, y, k=3)(dense_x)
+        return dense_x, np.clip(dense_y, 0.0, None)
+    except ValueError:
+        return x, y
+
+
 def save_actual_vs_predicted_plot(
     output_path: Path,
+    source_df: pd.DataFrame,
     predictions: pd.Series,
     actual: pd.Series | None,
     timeline: Dict[str, object],
 ) -> None:
     plt.figure(figsize=(14, 6))
+    x_values, x_label = cycle_axis(source_df, len(predictions))
     if actual is not None:
+        actual_x, actual_y = smooth_line(x_values, actual)
         plt.plot(
-            actual.reset_index(drop=True).rolling(5, min_periods=1).mean(),
+            actual_x,
+            actual_y,
             label="Actual RUL",
             linewidth=2.4,
         )
+    predicted_x, predicted_y = smooth_line(x_values, predictions)
     plt.plot(
-        predictions.reset_index(drop=True).rolling(5, min_periods=1).mean(),
+        predicted_x,
+        predicted_y,
         label="Predicted RUL",
         linewidth=2.4,
         linestyle="--",
     )
     if timeline["early_warning_row"] is not None:
+        warning_cycle = x_values[timeline["early_warning_row"]]
         plt.axvline(
-            timeline["early_warning_row"],
+            warning_cycle,
             color="#e0a100",
             linestyle=":",
             linewidth=2,
             label="Early warning",
         )
     if timeline["predicted_failure_row"] is not None:
+        failure_cycle = x_values[timeline["predicted_failure_row"]]
         plt.axvline(
-            timeline["predicted_failure_row"],
+            failure_cycle,
             color="#c62828",
             linestyle=":",
             linewidth=2,
             label="Predicted breakdown",
         )
     plt.title("Actual vs Predicted Breakdown Timeline")
-    plt.xlabel("Sample row")
-    plt.ylabel("Remaining Useful Life")
+    plt.xlabel(x_label)
+    plt.ylabel("Remaining Useful Life (RUL in cycles)")
     plt.grid(True, alpha=0.28)
     plt.legend()
     plt.tight_layout()
@@ -511,27 +624,36 @@ def save_shap_plot(output_path: Path, bundle: Dict[str, object], X: pd.DataFrame
 
 
 def clean_generated_files() -> None:
-    for path in (Path("actual_vs_predicted.png"), Path("feature_importance.png"), Path("shap_summary.png")):
+    stale_paths = (
+        Path("actual_vs_predicted.png"),
+        Path("feature_importance.png"),
+        Path("shap_summary.png"),
+        RESULTS_DIR / "actual_vs_predicted.png",
+        RESULTS_DIR / "feature_importance.png",
+        RESULTS_DIR / "feature_importance.csv",
+        RESULTS_DIR / "shap_summary.png",
+    )
+    for path in stale_paths:
         if path.exists():
             path.unlink()
     if Path("__pycache__").exists():
         shutil.rmtree("__pycache__")
     RESULTS_DIR.mkdir(exist_ok=True)
+    DATASETS_DIR.mkdir(exist_ok=True)
 
 
 def write_dashboard() -> None:
     dashboard_code = '''import json
 from pathlib import Path
 
-import pandas as pd
 import streamlit as st
 
 
 st.set_page_config(page_title="Machine Breakdown Predictor", layout="wide")
-st.title("Machine Breakdown Prediction Dashboard")
+st.title("Machine Breakdown Status")
 
 results_path = Path("results.json")
-predictions_path = Path("machine_failure_predictions.csv")
+graph_path = Path("results/actual_vs_predicted.png")
 
 if not results_path.exists():
     st.error("Run python app.py first.")
@@ -539,38 +661,32 @@ if not results_path.exists():
 
 data = json.loads(results_path.read_text(encoding="utf-8"))
 
-col1, col2, col3, col4 = st.columns(4)
-col1.metric("Current Status", data["machine_status"])
-col2.metric("Remaining Life", f'{data["remaining_life"]} cycles')
-col3.metric("Failure Risk", f'{data["failure_risk"]}%')
-col4.metric("Model", data["model_name"])
+status_col, time_col = st.columns(2)
+status_col.metric("Machine Status", data["machine_status"])
+time_col.metric("Breakdown Time", data["approx_failure_time"])
 
-st.info(f'Breakdown from latest row: {data["approx_failure_time"]}')
-st.warning(f'Early warning row: {data["early_warning_row"]} | Predicted breakdown row: {data["predicted_failure_row"]}')
-st.caption(f'Main sensor factor: {data["main_failure_factor"]}')
+rul_col, risk_col, factor_col = st.columns(3)
+rul_col.metric(
+    "Remaining Life",
+    f"{data['remaining_life']} {data.get('remaining_life_unit', 'cycles')}",
+)
+risk_col.metric("Failure Risk", f"{data['failure_risk']}%")
+factor_col.metric("Main Failure Factor", data["main_failure_factor"])
 
-left, right = st.columns(2)
-with left:
-    st.subheader("Actual vs Predicted")
-    st.image("results/actual_vs_predicted.png", use_container_width=True)
-with right:
-    st.subheader("Feature Importance")
-    st.image("results/feature_importance.png", use_container_width=True)
-
-shap_path = Path("results/shap_summary.png")
-if shap_path.exists():
-    st.subheader("SHAP Explainability")
-    st.image(str(shap_path), use_container_width=True)
-
-if predictions_path.exists():
-    st.subheader("Prediction Table")
-    df = pd.read_csv(predictions_path)
-    st.dataframe(df.tail(150), use_container_width=True, hide_index=True)
+st.subheader("Actual vs Predicted")
+if graph_path.exists():
+    st.image(str(graph_path), use_container_width=True)
+else:
+    st.warning("Run python app.py to generate the actual vs predicted graph.")
 '''
     Path("dashboard.py").write_text(dashboard_code, encoding="utf-8")
 
 
 def write_documentation() -> None:
+    doc_path = Path("WORKING_DOCUMENTATION.md")
+    if doc_path.exists():
+        return
+
     doc = """# Machine Breakdown Prediction - Working Documentation
 
 ## Purpose
@@ -615,19 +731,19 @@ python app.py
 Example non-interactive run:
 
 ```powershell
-python app.py --train-data simulated_training_machine_dataset.csv --predict-data simulated_testing_machine_dataset.csv --seconds-per-cycle 5
+python app.py --train-data datasets/simulated_training_machine_dataset.csv --predict-data datasets/simulated_testing_machine_dataset.csv --seconds-per-cycle 5
 ```
 
 For a prediction file that has no actual RUL column, provide the expected maximum RUL/cycle horizon:
 
 ```powershell
-python app.py --train-data simulated_training_machine_dataset.csv --predict-data new_machine_data.csv --rul-scale 900
+python app.py --train-data datasets/simulated_training_machine_dataset.csv --predict-data datasets/new_machine_data.csv --rul-scale 900
 ```
 
 ## Generated Files
 
 - `machine_breakdown_model.pkl`: saved trained model bundle.
-- `machine_failure_predictions.csv`: row-by-row predictions with alert levels.
+- `results/machine_failure_predictions.csv`: row-by-row predictions with alert levels.
 - `results.json`: final machine status and metrics.
 - `results/actual_vs_predicted.png`: graph comparing actual and predicted RUL when actual RUL exists.
 - `results/feature_importance.png`: main sensor factors used by the model.
@@ -678,24 +794,40 @@ By default, the early warning threshold is 12 percent of the prediction scale, w
 
 Accuracy should be close, not artificially perfect. The model avoids leaked output columns such as `Predicted_RUL`, `Actual_RUL`, `RMS`, `EMA`, and old generated columns from earlier runs.
 """
-    Path("WORKING_DOCUMENTATION.md").write_text(doc, encoding="utf-8")
+    doc_path.write_text(doc, encoding="utf-8")
 
 
 def run_prediction(args: argparse.Namespace) -> None:
+    DATASETS_DIR.mkdir(exist_ok=True)
+    RESULTS_DIR.mkdir(exist_ok=True)
     args = fill_interactive_args(args)
     if not args.no_clean:
         clean_generated_files()
 
     # Check if model exists and load it, or train if it doesn't exist
     if args.model_path.exists() and not args.force_retrain:
-        print("\n✅ Loading existing trained model...")
+        print("\n[OK] Loading existing trained model...")
         bundle = joblib.load(args.model_path)
+        resolved_training_path = training_path_from_bundle(bundle)
+        if resolved_training_path is not None:
+            bundle["training_csv"] = str(resolved_training_path)
         print(f"   Model trained on: {bundle['training_csv']}")
+        blocked_features = disallowed_model_features(bundle)
+        if blocked_features:
+            print(
+                f"   Found {len(blocked_features)} generated/label features in the saved model. "
+                "Retraining from sensor columns only..."
+            )
+            retrain_path = args.train_data or training_path_from_bundle(bundle) or DEFAULT_TRAIN_DATA
+            if not retrain_path.exists():
+                retrain_path = prompt_path("Enter historical training CSV path", DEFAULT_TRAIN_DATA)
+            args.train_data = retrain_path
+            bundle = train_model(args.train_data, args.model_path)
     else:
         if args.force_retrain and args.model_path.exists():
-            print("\n🔄 Force retraining model (--force-retrain flag set)...")
+            print("\n[INFO] Force retraining model (--force-retrain flag set)...")
         else:
-            print("\n📚 Training new model from the given historical dataset...")
+            print("\n[INFO] Training new model from the given historical dataset...")
         
         # Ensure train_data is provided for training
         if args.train_data is None:
@@ -712,6 +844,7 @@ def run_prediction(args: argparse.Namespace) -> None:
     )
 
     prediction_scale = infer_prediction_scale(args, predict_df, target_col, bundle)
+    rul_unit = bundle.get("target_unit") or infer_rul_unit(bundle.get("target_column"))
     predictions = pd.Series(
         np.clip(bundle["model"].predict(X), 0.0, 1.0) * prediction_scale,
         name="Predicted_RUL",
@@ -730,6 +863,7 @@ def run_prediction(args: argparse.Namespace) -> None:
         output_df,
         predictions,
         scale=prediction_scale,
+        rul_unit=rul_unit,
         seconds_per_cycle=args.seconds_per_cycle,
         early_warning_ratio=args.early_warning_ratio,
     )
@@ -743,6 +877,7 @@ def run_prediction(args: argparse.Namespace) -> None:
 
     save_actual_vs_predicted_plot(
         RESULTS_DIR / "actual_vs_predicted.png",
+        predict_df,
         predictions,
         actual,
         timeline,
@@ -759,17 +894,19 @@ def run_prediction(args: argparse.Namespace) -> None:
     results = {
         "machine_status": machine_status,
         "remaining_life": int(round(latest_rul)),
+        "remaining_life_unit": unit_label(rul_unit),
         "failure_risk": round(failure_risk, 2),
         "main_failure_factor": main_factor,
-        "approx_failure_time": format_duration(latest_rul, args.seconds_per_cycle),
+        "approx_failure_time": format_rul_duration(latest_rul, rul_unit, args.seconds_per_cycle),
         "early_warning_row": timeline["early_warning_row"],
         "predicted_failure_row": timeline["predicted_failure_row"],
-        "early_warning_threshold_cycles": timeline["warning_threshold_cycles"],
-        "failure_threshold_cycles": timeline["failure_threshold_cycles"],
+        "early_warning_threshold": timeline["warning_threshold_cycles"],
+        "failure_threshold": timeline["failure_threshold_cycles"],
         "model_name": bundle["model_name"],
-        "training_csv": str(args.train_data),
+        "training_csv": str(args.train_data or bundle.get("training_csv")),
         "prediction_csv": str(args.predict_data),
         "prediction_scale": prediction_scale,
+        "prediction_unit": unit_label(rul_unit),
         "validation_metrics": bundle["validation_metrics"],
         "prediction_metrics": prediction_metrics,
         "shap_created": shap_created,
@@ -777,26 +914,9 @@ def run_prediction(args: argparse.Namespace) -> None:
     RESULTS_JSON.write_text(json.dumps(results, indent=2), encoding="utf-8")
 
     print("\n========== MACHINE FAILURE REPORT ==========\n")
-    print(f"Training data (model)       : {bundle['training_csv']}")
-    print(f"Prediction data             : {args.predict_data}")
-    print(f"Selected model              : {bundle['model_name']}")
     print(f"Current machine status     : {machine_status}")
-    print(f"Latest predicted RUL       : {int(round(latest_rul))} cycles")
     print(f"Breakdown time from latest : {results['approx_failure_time']}")
-    print(f"Early warning row          : {timeline['early_warning_row']}")
-    print(f"Predicted breakdown row    : {timeline['predicted_failure_row']}")
-    print(f"Main sensor factor         : {main_factor}")
-    print(f"Failure risk               : {failure_risk:.2f}%")
-    print("\nValidation metrics from training split:")
-    for key, value in bundle["validation_metrics"].items():
-        print(f"  {key.upper():4}: {value:.3f}")
-    if prediction_metrics:
-        print("\nActual vs predicted metrics on new data:")
-        for key, value in prediction_metrics.items():
-            print(f"  {key.upper():4}: {value:.3f}")
-    print(f"\nSaved predictions          : {PREDICTIONS_PATH}")
-    print(f"Saved graph                : {RESULTS_DIR / 'actual_vs_predicted.png'}")
-    print(f"Saved documentation        : WORKING_DOCUMENTATION.md")
+    print(f"Actual vs predicted graph  : {RESULTS_DIR / 'actual_vs_predicted.png'}")
     print("Dashboard command          : streamlit run dashboard.py")
 
 
