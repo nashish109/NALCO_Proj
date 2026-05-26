@@ -1,91 +1,63 @@
 # NALCO Predictive Maintenance & Fault Analysis System
 
-An AI-powered industrial monitoring and predictive maintenance platform developed using Python and Streamlit to analyze machine performance, detect anomalies, and predict potential failures through interactive dashboards and machine learning models.
+Python and Streamlit project for predicting machine Remaining Useful Life (RUL), generating maintenance alerts, and showing results in a dashboard.
 
+## Main Files
 
-## Features
+- `app.py`: small entry point for running the prediction pipeline.
+- `maintenance_pipeline.py`: Ridge model training, prediction, feature creation, metrics, and chart generation.
+- `dashboard.py`: Streamlit dashboard that reads `results.json` and generated charts.
+- `data_simulator.py`: common dataset simulator for all sample data modes.
+- `project_paths.py`: shared project paths.
 
-- Predictive machine fault analysis
-- Interactive analytics dashboard
-- CSV dataset upload & preprocessing
-- Machine learning-based predictions
-- Performance visualization using charts
-- Real-time industrial insights
-- User-friendly Streamlit interface
+## Install
 
----
-
-## Tech Stack
-
-### Frontend
-- Streamlit
-- HTML/CSS
-
-### Backend
-- Python
-
-### Libraries
-- Pandas
-- NumPy
-- Scikit-learn
-- Matplotlib
-- Plotly
-
----
-
-## Project Structure
-
-```bash
-NALCO_Proj/
-│
-├── app.py
-├── dashboard.py
-├── dataset/
-├── model/
-├── requirements.txt
-└── README.md
-```
-
-
-
-## Installation
-
-Clone the repository:
-
-```bash
-git clone https://github.com/nashish109/NALCO_Proj.git
-cd NALCO_Proj
-```
-
-Install dependencies:
-
-```bash
+```powershell
 pip install -r requirements.txt
 ```
 
-Run the application:
+## Run Prediction
 
-```bash
+```powershell
+python app.py --predict-data datasets\machine_vibration_testing_dataset.csv --train-data datasets\machine_vibration_training_dataset.csv --seconds-per-cycle 5
+```
+
+Use `--force-retrain` when you want to rebuild `machine_breakdown_model.pkl`.
+
+## Run Dashboard
+
+```powershell
 streamlit run dashboard.py
 ```
 
----
+## Generate Sample Data
 
+Use the single simulator command:
 
-## Workflow
+```powershell
+python data_simulator.py few-days
+python data_simulator.py healthy
+python data_simulator.py long-life
+```
 
-1. Upload industrial dataset  
-2. Preprocess and analyze data  
-3. Predict machine faults  
-4. Visualize insights and trends  
-5. Generate maintenance analytics  
+Each simulator run now saves two files inside `datasets/`:
 
+- a numbered history file, such as `few_days_machine_dataset_1.csv`
+- a latest file, such as `few_days_machine_dataset.csv`, which is the easy file to pass into `app.py`
 
-## Future Enhancements
+By default, each run uses a new random seed. Use `--seed 42` when you want repeatable data.
 
-- Real-time IoT integration
-- Advanced anomaly detection
-- Cloud deployment
-- Automated maintenance alerts
-- Multi-machine monitoring
+For more different prediction timelines, use a few-days profile:
 
+```powershell
+python data_simulator.py few-days --profile healthy
+python data_simulator.py few-days --profile watch
+python data_simulator.py few-days --profile warning
+python data_simulator.py few-days --profile critical
+```
+
+## Outputs
+
+- `results.json`: dashboard summary values.
+- `results/machine_failure_predictions.csv`: row-by-row predictions.
+- `results/actual_vs_predicted.png`: actual vs predicted RUL graph.

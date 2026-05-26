@@ -1,9 +1,6 @@
-from pathlib import Path
-
 import pandas as pd
 
-
-PREDICTIONS_PATH = Path("results") / "machine_failure_predictions.csv"
+from project_paths import PREDICTIONS_PATH
 TARGET_CANDIDATES = (
     "actual_remaining_life",
     "remaining_useful_life",

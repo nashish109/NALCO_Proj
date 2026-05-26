@@ -1,4 +1,4 @@
-import json
+DASHBOARD_CODE = '''import json
 from pathlib import Path
 
 import streamlit as st
@@ -35,3 +35,4 @@ if graph_path.exists():
     st.image(str(graph_path), use_container_width=True)
 else:
     st.warning("Run python app.py to generate the actual vs predicted graph.")
+'''

@@ -1,28 +1,26 @@
 {
   "machine_status": "RUNNING",
-  "remaining_life": 71,
+  "remaining_life": 70,
   "remaining_life_unit": "hours",
-  "failure_risk": 63.49,
-  "main_failure_factor": "bearing_wear_percent_mean_30",
-  "approx_failure_time": "2d 23h 12m 4s",
+  "approx_failure_time": "2d 22h 20m 23s",
   "early_warning_row": null,
   "predicted_failure_row": null,
   "early_warning_threshold": 23.4,
   "failure_threshold": 5.0,
-  "model_name": "ridge",
+  "model_name": "ridge_regression",
   "training_csv": "datasets\\machine_vibration_training_dataset.csv",
-  "prediction_csv": "datasets\\few_days_machine_dataset.csv",
+  "prediction_csv": "datasets\\few_days_machine_dataset_3.csv",
   "prediction_scale": 195.0,
   "prediction_unit": "hours",
   "validation_metrics": {
-    "mae": 3.0061431444660345,
-    "rmse": 3.6465491695025136,
-    "r2": 0.8992000089659458
+    "mae": 2.4654787457194716,
+    "rmse": 3.058590909694594,
+    "r2": 0.9290848325732646
   },
   "prediction_metrics": {
-    "mae": 3.0893193443680214,
-    "rmse": 3.7812003324993557,
-    "r2": 0.6978921218400149
+    "mae": 1.4875026627467927,
+    "rmse": 1.809436386798172,
+    "r2": 0.9347981612659166
   },
-  "shap_created": false
+  "warnings": []
 }
