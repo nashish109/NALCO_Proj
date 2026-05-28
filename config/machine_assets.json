@@ -1,0 +1,30 @@
+{
+  "active_asset_id": "assembly_cell_a17",
+  "assets": {
+    "assembly_cell_a17": {
+      "asset_id": "assembly_cell_a17",
+      "display_name": "Assembly Cell A-17",
+      "machine_type": "rotating_equipment",
+      "plant_area": "Line 1 / Final Assembly",
+      "telemetry_source": "csv_replay",
+      "csv_path": "datasets/few_days_machine_dataset.csv",
+      "sampling_interval_seconds": 5,
+      "tag_map": {
+        "timestamp": "timestamp",
+        "vibration_rms_mm_s": "vibration_rms_mm_s",
+        "temperature_c": "temperature_c",
+        "rpm": "rpm",
+        "acoustic_noise_db": "acoustic_noise_db",
+        "bearing_wear_percent": "bearing_wear_percent",
+        "lubricant_quality_percent": "lubricant_quality_percent"
+      },
+      "thresholds": {
+        "warning_rul_hours": 72,
+        "critical_rul_hours": 8,
+        "warning_failure_probability": 0.42,
+        "high_failure_probability": 0.66,
+        "critical_failure_probability": 0.82
+      }
+    }
+  }
+}
