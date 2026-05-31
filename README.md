@@ -1,155 +1,73 @@
 ````markdown
 # LAST 200 HOURS
 
-### Enterprise AI-Powered Predictive Maintenance Platform Built with Hermes Agent
+An AI-powered predictive maintenance system built with Hermes Agent.
 
-LAST 200 HOURS is an intelligent predictive maintenance platform that helps organizations detect equipment degradation before failure occurs.
+LAST 200 HOURS analyzes industrial telemetry data to predict equipment failures, estimate Remaining Useful Life (RUL), detect anomalies, generate maintenance recommendations, and learn from historical machine behavior.
 
-The platform combines machine learning, real-time telemetry processing, anomaly detection, Remaining Useful Life (RUL) prediction, and autonomous reasoning through Hermes Agent to transform raw sensor data into actionable maintenance decisions.
-
-Unlike traditional predictive maintenance systems that only generate predictions, LAST 200 HOURS uses Hermes Agent to analyze machine behavior, investigate anomalies, explain risks, generate maintenance recommendations, and support operational decision-making.
+Built for the Hermes Agent Challenge.
 
 ---
 
-## Why LAST 200 HOURS?
+## What It Does
 
-Industrial equipment failures are expensive.
-
-Unexpected downtime can lead to:
-
-- Production interruptions
-- Increased maintenance costs
-- Safety risks
-- Asset degradation
-- Revenue loss
-
-LAST 200 HOURS continuously monitors machine health and provides early warnings before critical failures occur.
-
-The platform helps maintenance teams move from reactive maintenance to predictive and intelligence-driven maintenance.
-
----
-
-## Powered by Hermes Agent
-
-Hermes Agent acts as the intelligent decision-making layer of the platform.
-
-Instead of simply displaying predictions, Hermes:
-
-- Interprets machine health metrics
-- Investigates abnormal behavior
-- Explains potential failure causes
+- Predicts Remaining Useful Life (RUL)
+- Detects abnormal machine behavior
+- Calculates failure probability
 - Generates maintenance recommendations
-- Produces executive-ready reports
-- Simulates future degradation scenarios
-- Supports data-driven maintenance planning
-
-Hermes transforms predictive analytics into actionable operational intelligence.
-
----
-
-## Key Features
-
-### Remaining Useful Life (RUL) Prediction
-
-Estimate the remaining operational life of industrial equipment before maintenance becomes necessary.
-
-### Anomaly Detection
-
-Automatically identify abnormal operating conditions and emerging equipment issues.
-
-### Failure Probability Scoring
-
-Quantify operational risk using predictive machine learning models.
-
-### Hermes Agent Reasoning
-
-Generate human-readable explanations and maintenance recommendations based on telemetry insights.
-
-### Future Degradation Simulation
-
-Simulate future equipment behavior to support maintenance planning and asset management.
-
-### Automated PDF Reports
-
-Generate professional maintenance assessment reports automatically.
-
-### Real-Time Telemetry Ingestion
-
-Stream live sensor readings into the platform through API endpoints.
-
-### Enterprise Monitoring Dashboard
-
-Visualize machine health, risk levels, predictions, anomalies, and recommendations from a centralized dashboard.
-
-### Model Evaluation & Retraining
-
-Continuously evaluate model performance and retrain using updated operational data.
-
-### Telemetry Simulator
-
-Generate realistic industrial sensor data for testing and experimentation.
+- Simulates future equipment degradation
+- Produces PDF maintenance reports
+- Ingests real-time telemetry data
+- Evaluates and retrains predictive models
 
 ---
 
-## System Architecture
+## Hermes Agent
+
+Hermes Agent serves as the reasoning and decision-making layer of the platform.
+
+It:
+
+- Analyzes telemetry insights
+- Investigates anomalies
+- Explains failure risks
+- Generates maintenance recommendations
+- Produces maintenance reports
+- Supports operational decision-making
+
+Unlike traditional predictive maintenance systems that stop at predictions, Hermes Agent helps transform predictions into actionable maintenance intelligence.
+
+---
+
+## Architecture
 
 ```text
-Industrial Sensors
-        │
-        ▼
-Telemetry Ingestion Layer
-        │
-        ▼
-Feature Engineering
-        │
-        ▼
+Telemetry Data
+      │
+      ▼
 Machine Learning Models
-        │
-        ├── RUL Prediction
-        ├── Failure Prediction
-        └── Anomaly Detection
-        │
-        ▼
-      Hermes Agent
-        │
-        ├── Root Cause Analysis
-        ├── Maintenance Recommendations
-        ├── Risk Interpretation
-        ├── Future Simulations
-        └── Report Generation
-        │
-        ▼
-Enterprise Dashboard
+      │
+      ├── RUL Prediction
+      ├── Failure Scoring
+      └── Anomaly Detection
+      │
+      ▼
+   Hermes Agent
+      │
+      ▼
+Recommendations & Reports
 ````
 
 ---
 
-## Installation
-
-### Clone Repository
-
-```bash
-git clone <repository-url>
-cd last-200-hours
-```
-
-### Install Dependencies
+## Run Locally
 
 ```bash
 pip install -r requirements.txt
-```
-
-### Launch Application
-
-```bash
 python app.py
 ```
 
----
-
-## Access Dashboard
-
-Open your browser and navigate to:
+Open:
 
 ```text
 http://127.0.0.1:5000
@@ -157,43 +75,7 @@ http://127.0.0.1:5000
 
 ---
 
-## API Capabilities
-
-### Telemetry Ingestion
-
-```http
-POST /api/telemetry
-```
-
-Submit real-time machine telemetry data.
-
-### Predictive Analytics
-
-* RUL prediction
-* Failure probability scoring
-* Anomaly detection
-
-### Simulation
-
-* Synthetic telemetry generation
-* Future degradation forecasting
-
-### Reporting
-
-* Maintenance assessment reports
-* PDF export
-
-### Model Operations
-
-* Evaluation
-* Retraining
-* Performance monitoring
-
----
-
 ## Documentation
-
-Detailed project documentation is available in:
 
 * PROJECT_FILE_GUIDE.md
 * HERMES_AGENT_ARCHITECTURE.md
@@ -201,39 +83,16 @@ Detailed project documentation is available in:
 
 ---
 
-## Use Cases
-
-* Manufacturing Plants
-* Industrial Automation
-* Energy & Utilities
-* Oil & Gas Operations
-* Smart Factories
-* Predictive Maintenance Research
-* Asset Reliability Engineering
-
----
-
 ## Future Roadmap
 
-* Real-time IoT edge device integration
-* Multi-agent collaboration using Hermes Agent
-* Cross-asset knowledge transfer
-* Predictive spare-parts recommendation
-* Autonomous maintenance scheduling
-* Digital twin integration
-* Cloud-native deployment architecture
+* Real-Time IoT Integration
+* Multi-Agent Collaboration
+* Autonomous Maintenance Planning
+* Digital Twin Integration
 
 ---
 
-## Built for the Hermes Agent Challenge
-
-This project demonstrates how Hermes Agent can move beyond traditional chatbot experiences and serve as an intelligent operational assistant capable of reasoning over industrial telemetry, supporting maintenance decisions, and enhancing predictive maintenance workflows.
-
-Hermes Agent sits at the heart of the platform, transforming raw machine data into actionable intelligence.
-
----
-
-> "Don't just predict failures. Learn from them."
+"Don't just predict failures. Learn from them."
 
 ```
 ```
