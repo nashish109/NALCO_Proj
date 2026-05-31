@@ -1,569 +1,896 @@
-# Machine Fault Detection Project Guide
+# LAST 200 HOURS - Complete Project File Guide
 
-This guide explains the current simplified project from start to end in plain language.
-
-## 1. What This Project Does
-
-The project predicts **Remaining Useful Life**, also called **RUL**, for a machine.
-
-RUL means:
+Project tagline:
 
 ```text
-How much useful working time is left before the machine reaches failure condition?
+Every machine whispers before it dies. Hermes Agent learns to listen.
 ```
 
-The project reads machine sensor data such as vibration, temperature, RPM, acoustic noise, bearing wear, and lubricant quality. It then predicts the remaining life and shows the result in a Streamlit dashboard.
+This guide explains the complete current project after the Hermes Agent transformation. It replaces the older Streamlit/RUL-only guide.
 
-The dashboard now focuses only on the most important values:
+The project is now an industrial AI monitoring platform with:
 
-- Machine status
-- Approximate breakdown time
-- Remaining life
-- Model name
-- Actual vs predicted graph
+- live telemetry replay from CSV datasets
+- external real-machine telemetry ingestion through API
+- RUL prediction
+- anomaly detection
+- failure probability calculation
+- Hermes Agent reasoning and maintenance decisions
+- future degradation simulation
+- alerting
+- PDF maintenance reports
+- enterprise-grade browser dashboard
+- simulator-driven test data generation
+- model evaluation and retraining endpoints
 
-Failure risk and main failure factor were removed to keep the project simple and easier to explain.
+## 1. Current Project Purpose
 
-## 2. Complete Working Flow
+The system predicts machine health and remaining useful life, then lets Hermes Agent act as the reasoning layer.
+
+The old pipeline was:
 
 ```text
-Generate or use machine sensor data
-        |
-        v
-Run app.py
-        |
-        v
-Load or train one Ridge Regression model
-        |
-        v
-Predict Remaining Useful Life
-        |
-        v
-Create results.json, prediction CSV, and graph
-        |
-        v
-Open dashboard.py with Streamlit
+Sensor Data -> ML Prediction -> Dashboard
 ```
 
-## 3. How To Run From Start
+The current pipeline is:
 
-Open PowerShell:
+```text
+CSV Replay or Real Telemetry
+        |
+        v
+Canonical Telemetry Schema
+        |
+        v
+Prediction Engine + Anomaly Tools
+        |
+        v
+Hermes Agent
+        |
+        +--> Analyze degradation
+        +--> Decide maintenance action
+        +--> Explain failure evidence
+        +--> Simulate future machine state
+        +--> Generate alerts/reports
+        |
+        v
+Flask API + Enterprise Dashboard
+```
+
+## 2. Important Truth About The Data
+
+By default, the dashboard is not connected to a real factory machine. It replays rows from:
+
+```text
+datasets/few_days_machine_dataset.csv
+```
+
+This replay is handled by:
+
+```text
+simulation/sensor_stream.py
+```
+
+Every frontend refresh calls:
+
+```http
+GET /api/state
+```
+
+That advances the telemetry stream by one row and returns a full Hermes Agent state.
+
+The project also supports real telemetry through:
+
+```http
+POST /api/telemetry
+```
+
+So the system is now structured like a deployable industrial prototype: CSV replay for demo/testing, API ingestion for real plant data.
+
+## 3. Quick Start
+
+Open PowerShell in the project root:
 
 ```powershell
-cd "E:\NALCO Proj\Machine_Fault_detection_by_SensorData"
+cd "E:\PERSONAL PROJECTS\INDUSTRIAL_AI_AGENT_SYSTEM"
 ```
 
-Activate the virtual environment:
-
-```powershell
-.venv\Scripts\activate
-```
-
-Install packages if needed:
+Install dependencies:
 
 ```powershell
 pip install -r requirements.txt
 ```
 
-Generate sample data:
+Run the application:
 
 ```powershell
-python data_simulator.py few-days
-```
-
-Train once and predict:
-
-```powershell
-python app.py --train-data datasets\machine_vibration_training_dataset.csv --predict-data datasets\few_days_machine_dataset.csv --seconds-per-cycle 5 --force-retrain
+python app.py
 ```
 
 Open the dashboard:
 
-```powershell
-streamlit run dashboard.py
+```text
+http://127.0.0.1:5000
 ```
 
-For normal testing after the model is already trained, do not use `--force-retrain`:
+Stop the server with `Ctrl+C` in the terminal if it is running in the foreground.
 
-```powershell
-python app.py --predict-data datasets\few_days_machine_dataset.csv --seconds-per-cycle 5
-```
+## 4. Main Runtime Flow
 
-## 4. Important Rule About Training
+When the browser opens:
 
-You do not need to train every time.
+1. `frontend/index.html` loads the enterprise dashboard shell.
+2. `frontend/app.js` starts polling `/api/state`.
+3. `backend/hermes_api.py` receives the request.
+4. `HermesAgent.tick()` advances one monitoring cycle.
+5. `SensorStream.next_sample()` returns a telemetry row and a rolling window.
+6. `PredictionEngine.predict_rul()` predicts remaining useful life.
+7. Tool functions calculate anomaly score, risk, failure analysis, maintenance recommendation, alert, and future simulation.
+8. Flask returns JSON to the browser.
+9. The frontend updates KPI cards, charts, tables, alerts, logs, and settings status.
 
-Use this only when you want a fresh model:
-
-```powershell
---force-retrain
-```
-
-Use this for direct testing with the saved model:
-
-```powershell
-python app.py --predict-data datasets\few_days_machine_dataset.csv --seconds-per-cycle 5
-```
-
-The saved model file is:
+## 5. Current Folder Structure
 
 ```text
-machine_breakdown_model.pkl
-```
-
-## 5. Model Used
-
-The project now uses only one model:
-
-```text
-Ridge Regression
-```
-
-In code, it is created like this:
-
-```python
-make_pipeline(StandardScaler(), Ridge(alpha=1.0))
-```
-
-This means two things happen:
-
-1. `StandardScaler()` makes sensor values easier for the model to compare.
-2. `Ridge()` learns the relationship between sensor features and remaining useful life.
-
-Simple explanation:
-
-```text
-Sensor readings go in.
-Remaining useful life comes out.
-```
-
-Why Ridge Regression is used:
-
-- It was performing well in this project.
-- It is fast.
-- It is stable.
-- It is easier to explain than multiple competing models.
-- It keeps the project simple without reducing practical result quality for this dataset.
-
-## 6. Project Files
-
-```text
-app.py
-maintenance_pipeline.py
-data_simulator.py
-dashboard.py
-project_paths.py
-project_templates.py
-debug_predictions.py
-requirements.txt
-machine_breakdown_model.pkl
-results.json
+agent/
+backend/
+config/
 datasets/
+frontend/
+ingestion/
+ml/
+reports/
+simulation/
+tools/
+app.py
+data_simulator.py
+maintenance_pipeline.py
+project_paths.py
+machine_breakdown_model.pkl
+requirements.txt
+README.md
+HERMES_AGENT_ARCHITECTURE.md
+INDUSTRIAL_DEPLOYMENT_GUIDE.md
+PROJECT_FILE_GUIDE.md
+```
+
+Generated folders/files:
+
+```text
 results/
+__pycache__/
 ```
 
-## 7. `app.py`
+`results/` is created when reports or legacy prediction outputs are generated. `__pycache__/` is Python runtime cache and should not be treated as source code.
 
-This is the entry point.
+## 6. File-By-File Guide
 
-It is intentionally very small:
+### `app.py`
+
+Main application entry point.
+
+Current responsibility:
 
 ```python
-from maintenance_pipeline import parse_args, run_prediction
-
-if __name__ == "__main__":
-    run_prediction(parse_args())
+from backend.hermes_api import run
 ```
 
-Meaning:
+Running `python app.py` starts the Flask server and the Hermes Agent dashboard.
 
-- Read command-line inputs.
-- Start the prediction workflow.
-- Keep heavy logic outside `app.py`.
+### `backend/hermes_api.py`
 
-This makes the project easier to explain.
+The Flask backend API.
 
-## 8. `maintenance_pipeline.py`
+Responsibilities:
 
-This is the main working file.
+- serve the frontend files
+- expose live Hermes Agent state
+- accept real telemetry JSON
+- generate reports
+- generate simulator datasets
+- retrain/evaluate the model
+- expose asset configuration
+- expose credibility/production-readiness metadata
 
-It handles:
-
-- input arguments
-- model training
-- saved model loading
-- feature creation
-- prediction
-- alert status
-- graph creation
-- result file creation
-
-### Important Constants
-
-`TARGET_CANDIDATES`
-
-Possible names for the actual RUL column:
+Important endpoints:
 
 ```text
-actual_remaining_life
-remaining_useful_life
-remaining_useful_life_hours
-remaining_life
-rul
+GET  /
+GET  /api/state
+GET  /api/assets
+GET  /api/credibility
+POST /api/telemetry
+POST /api/simulator/generate
+POST /api/model/retrain
+POST /api/model/evaluate
+POST /api/report
+GET  /reports/<filename>
 ```
 
-The code checks these names to find the correct target column.
+### `agent/hermes_agent.py`
 
-`LEAK_OR_GENERATED_COLUMNS`
+The central agent orchestration layer.
 
-Columns that should not be used as sensor inputs.
+Hermes Agent responsibilities:
 
-Examples:
+- observe telemetry
+- call RUL prediction
+- call anomaly detection
+- calculate failure probability
+- generate failure explanation
+- recommend maintenance
+- simulate future degradation
+- create alerts
+- create reports during critical states
+- maintain live logs and thought process
+
+Important methods:
+
+- `tick()` - runs one full monitoring cycle
+- `ingest_telemetry(payload)` - accepts external plant telemetry
+- `reload_stream(source_path)` - reloads the active CSV stream
+- `report()` - generates a maintenance PDF
+
+### `tools/industrial_tools.py`
+
+Reusable JSON-returning tool functions.
+
+These are the agent's callable tools:
+
+- `predict_rul(sensor_window, engine)`
+- `detect_anomaly(sensor_data)`
+- `calculate_failure_probability(rul_hours, anomaly_score, sensor_data)`
+- `generate_failure_analysis(sensor_data, rul_hours, anomaly, failure_probability)`
+- `recommend_maintenance(rul_hours, anomaly_score, failure_probability)`
+- `simulate_future_degradation(sensor_data, rul_hours, failure_probability)`
+- `send_alert(level, message)`
+- `generate_report(machine_state)`
+
+Every tool returns structured JSON-like dictionaries so it can be reused by APIs, dashboards, and future agent frameworks.
+
+### `ml/prediction_engine.py`
+
+Runtime model wrapper.
+
+Responsibilities:
+
+- load `machine_breakdown_model.pkl`
+- train a fallback model if the pickle is missing or incompatible
+- build features using the legacy pipeline's feature builder
+- predict RUL from the current telemetry window
+- return health percentage and confidence
+
+The model output is normalized back to hours using the saved training scale.
+
+### `ml/model_ops.py`
+
+Model operations utilities.
+
+Responsibilities:
+
+- `retrain_rul_model()` retrains the Ridge model from a labeled CSV
+- `evaluate_model()` evaluates the saved model against a labeled test CSV
+
+This is used by:
 
 ```text
-actual_remaining_life
-predicted_rul
-prediction_error
-alert_level
-breakdown_label
+POST /api/model/retrain
+POST /api/model/evaluate
 ```
 
-This prevents the model from cheating by learning from answer columns.
+### `maintenance_pipeline.py`
 
-`ROLLING_WINDOWS`
+Legacy but still useful ML training/prediction pipeline.
 
-```text
-5, 15, 30
-```
+Responsibilities:
 
-These are used to create rolling sensor features.
+- parse command-line prediction arguments
+- train the Ridge Regression model
+- build rolling features
+- save model bundle
+- calculate validation metrics
+- create prediction CSV/plot if used directly
 
-### Important Functions
+It is still important because `ml/prediction_engine.py` and `ml/model_ops.py` reuse its robust functions:
 
-`parse_args()`
+- `train_model()`
+- `build_features()`
+- `optional_target_column()`
+- `regression_metrics()`
 
-Reads command-line options such as:
+### `data_simulator.py`
 
-- `--train-data`
-- `--predict-data`
-- `--seconds-per-cycle`
-- `--force-retrain`
+Dataset generator.
 
-`fill_interactive_args()`
-
-Fills missing values using defaults or user input.
-
-`find_target_column()`
-
-Finds the actual RUL column in the training dataset.
-
-`detect_sensor_columns()`
-
-Chooses real numeric sensor columns and ignores answer/generated columns.
-
-`build_features()`
-
-Creates model input features from raw sensor readings.
-
-For each sensor, it creates:
-
-- current value
-- rolling mean
-- rolling standard deviation
-- difference from previous row
-- exponential moving average
-
-This helps the model understand not only the current sensor value, but also recent behavior.
-
-`create_model()`
-
-Creates the single Ridge Regression model:
-
-```python
-make_pipeline(StandardScaler(), Ridge(alpha=1.0))
-```
-
-`train_model()`
-
-Trains the Ridge model.
-
-Steps:
-
-1. Read training CSV.
-2. Find actual RUL column.
-3. Build sensor features.
-4. Split data into training and validation parts.
-5. Train Ridge Regression.
-6. Check validation accuracy.
-7. Train final model on full training data.
-8. Save it to `machine_breakdown_model.pkl`.
-
-`infer_prediction_scale()`
-
-Finds the RUL scale used to convert model output back into real hours or cycles.
-
-`data_quality_warnings()`
-
-Checks whether the prediction dataset matches the training dataset format.
-
-This helps catch mistakes such as testing long-life data with the normal hours-based model.
-
-`status_from_rul()`
-
-Converts predicted RUL into status:
-
-```text
-RUNNING
-EARLY WARNING
-BREAKDOWN IMMINENT
-```
-
-`add_breakdown_timeline()`
-
-Adds prediction columns to the output CSV:
-
-- `Predicted_RUL`
-- `Predicted_RUL_Unit`
-- `Predicted_Breakdown_Time`
-- `Alert_Level`
-
-`save_actual_vs_predicted_plot()`
-
-Creates:
-
-```text
-results/actual_vs_predicted.png
-```
-
-`clean_generated_files()`
-
-Deletes old generated files before creating fresh output.
-
-`run_prediction()`
-
-Runs the full pipeline:
-
-1. Prepare folders.
-2. Load or train model.
-3. Read prediction data.
-4. Build features.
-5. Predict RUL.
-6. Save prediction CSV.
-7. Save graph.
-8. Write `results.json`.
-9. Print terminal report.
-
-## 9. `data_simulator.py`
-
-This file creates sample machine datasets.
+It creates realistic sample machine degradation datasets.
 
 Commands:
 
 ```powershell
 python data_simulator.py few-days
+python data_simulator.py few-days --profile warning
+python data_simulator.py few-days --profile critical
 python data_simulator.py healthy
 python data_simulator.py long-life
 ```
 
-Each run uses a fresh random seed by default, then saves a numbered file and a latest file.
+Profiles:
 
-Use a fixed seed only when you want repeatable demo data:
+- `healthy` - high remaining life
+- `watch` - medium degradation
+- `warning` - meaningful risk
+- `critical` - near-failure data
+- `auto` - random profile
 
-```powershell
-python data_simulator.py few-days --seed 42
-```
+Yes, data generated here can be used to predict breakdown. It is best for demos, testing, and model rehearsal. It is not proof of real-world accuracy unless validated against real machine history.
 
-Use profiles when you want visibly different prediction timelines:
+### `simulation/sensor_stream.py`
 
-```powershell
-python data_simulator.py few-days --profile healthy
-python data_simulator.py few-days --profile watch
-python data_simulator.py few-days --profile warning
-python data_simulator.py few-days --profile critical
-```
+Telemetry stream adapter.
 
-Profile meaning:
+Responsibilities:
 
-- `healthy`: high remaining life, mostly running.
-- `watch`: medium remaining life, useful for normal decline demos.
-- `warning`: lower remaining life, should move into early warning.
-- `critical`: very low remaining life, should move near breakdown imminent.
+- replay CSV rows as live telemetry
+- maintain rolling history window
+- accept external telemetry through an in-memory queue
+- canonicalize incoming data using tag mappings
+- reload CSV datasets when simulator data is generated
 
-Example for `few-days`:
+Data source priority:
 
-```text
-datasets/few_days_machine_dataset_1.csv
-datasets/few_days_machine_dataset.csv
-```
+1. If external telemetry is queued, use it first.
+2. Otherwise replay the configured CSV file.
 
-Use the numbered file when you want to compare different generated datasets. Use the latest file when you want the simplest command for prediction.
+### `simulation/future_degradation.py`
 
-`few-days`
+Future failure simulator.
 
-Creates a dataset where the machine has a few days of remaining life.
+It projects:
 
-Output examples:
+- current machine state
+- 24 hours later
+- 48 hours later
+- 72 hours later
+- estimated failure point
 
-```text
-datasets/few_days_machine_dataset_1.csv
-datasets/few_days_machine_dataset.csv
-```
+Outputs include:
 
-`healthy`
+- health percent
+- vibration
+- temperature
+- bearing wear
+- lubricant quality
+- failure probability
 
-Creates a healthier machine sample.
+### `simulation/simulator_ops.py`
 
-Output examples:
+API helper around `data_simulator.py`.
 
-```text
-datasets/healthy_machine_dataset_1.csv
-datasets/healthy_machine_dataset.csv
-```
-
-`long-life`
-
-Creates a separate long-life training and testing dataset.
-
-Output examples:
+Used by:
 
 ```text
-datasets/extended_training_dataset_1.csv
-datasets/extended_training_dataset.csv
-datasets/long_life_machine_dataset_1.csv
-datasets/long_life_machine_dataset.csv
+POST /api/simulator/generate
 ```
 
-Important:
+It generates a new dataset, updates `datasets/few_days_machine_dataset.csv`, and reloads the live stream.
 
-Do not test `long_life_machine_dataset.csv` with the normal `machine_vibration_training_dataset.csv` model. The scale and sensor columns are different.
+### `ingestion/schema.py`
 
-Correct long-life command:
+Canonical telemetry schema.
 
-```powershell
-python data_simulator.py long-life
-python app.py --train-data datasets\extended_training_dataset.csv --predict-data datasets\long_life_machine_dataset.csv --seconds-per-cycle 5 --force-retrain
-```
+This file makes real machine integration easier.
 
-## 10. `dashboard.py`
+It maps different field names into the names expected by the ML model:
 
-This is the Streamlit dashboard.
+- `vibration_rms_mm_s`
+- `temperature_c`
+- `rpm`
+- `acoustic_noise_db`
+- `bearing_wear_percent`
+- `lubricant_quality_percent`
+- `remaining_useful_life_hours`
 
-It reads:
+It also calculates data quality:
+
+- missing required fields
+- missing optional fields
+- prediction readiness
+- completeness score
+
+### `ingestion/asset_config.py`
+
+Loads the machine asset configuration from:
 
 ```text
-results.json
+config/machine_assets.json
 ```
 
-and displays:
+### `config/machine_assets.json`
 
-- machine status
-- breakdown time
-- remaining life
-- model name
-- actual vs predicted graph
+Machine configuration file.
 
-If `results.json` does not exist, it asks the user to run `python app.py` first.
+Defines:
 
-## 11. `project_paths.py`
+- active asset id
+- display name
+- machine type
+- plant area
+- telemetry source
+- CSV replay file
+- sampling interval
+- plant tag mapping
+- alert thresholds
 
-This stores common paths:
+Use this file when connecting real machines with different tag names.
+
+Example mapping:
+
+```json
+"tag_map": {
+  "vibration_rms_mm_s": "PLC1.DB20.VIB_RMS",
+  "temperature_c": "PLC1.DB20.BRG_TEMP",
+  "rpm": "PLC1.DB20.MOTOR_RPM"
+}
+```
+
+### `frontend/index.html`
+
+Dashboard structure.
+
+Contains:
+
+- top navigation
+- sidebar
+- Dashboard view
+- Live Monitoring view
+- Predictions view
+- Analytics view
+- Reports view
+- Alerts view
+- Settings view
+
+### `frontend/styles.css`
+
+Enterprise dark-theme styling.
+
+Controls:
+
+- layout
+- responsive behavior
+- dashboard cards
+- tables
+- charts
+- navigation
+- mobile sidebar
+- settings forms
+- alert colors
+
+### `frontend/app.js`
+
+Frontend application logic.
+
+Responsibilities:
+
+- poll `/api/state`
+- switch sidebar views
+- draw charts on canvas
+- render sensor tables
+- render risk matrices
+- render alerts/logs/decisions
+- generate reports
+- generate simulator datasets
+- evaluate model
+- control refresh interval, trend window, density, pause/resume
+
+Important frontend views:
+
+- `dashboard`
+- `monitoring`
+- `predictions`
+- `analytics`
+- `reports`
+- `alerts`
+- `settings`
+
+### `reports/maintenance_report.py`
+
+PDF report generator.
+
+Creates:
+
+```text
+results/last_200_hours_maintenance_report.pdf
+```
+
+Report includes:
+
+- alert level
+- machine health
+- RUL
+- failure probability
+- anomaly severity
+- failure explanation
+- maintenance recommendation
+- future degradation chart
+
+### `project_paths.py`
+
+Shared path constants.
+
+Defines:
 
 - project root
-- `datasets/`
-- `results/`
-- `machine_breakdown_model.pkl`
-- `results.json`
-- prediction CSV path
-- default training data
-- default prediction data
+- datasets folder
+- results folder
+- model path
+- default training dataset
+- default prediction dataset
 
-This avoids repeating paths across the project.
+### `machine_breakdown_model.pkl`
 
-## 12. `project_templates.py`
+Saved trained model bundle.
 
-This stores dashboard code as a template.
+Contains:
 
-The pipeline can refresh `dashboard.py` from this template.
+- Ridge Regression pipeline
+- feature column list
+- sensor column list
+- target column
+- target unit
+- target max scale
+- validation metrics
 
-## 13. `debug_predictions.py`
+If deleted, the application can retrain from the default training dataset, but startup will take longer.
 
-This is a helper script for checking predictions.
+### `requirements.txt`
 
-Run it after `app.py`:
+Python dependencies:
 
-```powershell
-python debug_predictions.py
-```
+- Flask
+- pandas
+- numpy
+- matplotlib
+- scipy
+- joblib
+- scikit-learn
 
-It prints:
+### `README.md`
 
-- prediction file path
-- number of rows
-- minimum predicted RUL
-- maximum predicted RUL
-- mean predicted RUL
-- first 20 prediction rows
+Short project overview and quick commands.
 
-It is useful for debugging, but it is not required for normal dashboard use.
+### `HERMES_AGENT_ARCHITECTURE.md`
 
-## 14. Input Files
+Architecture summary for reviewers.
 
-Main training dataset:
+### `INDUSTRIAL_DEPLOYMENT_GUIDE.md`
+
+Deployment guide explaining:
+
+- CSV replay vs real telemetry
+- telemetry API contract
+- tag mapping
+- simulator usage
+- production-readiness limitations
+- real-machine integration path
+
+## 7. Dataset Files
+
+Important dataset files:
 
 ```text
 datasets/machine_vibration_training_dataset.csv
-```
-
-Main prediction dataset:
-
-```text
 datasets/machine_vibration_testing_dataset.csv
+datasets/few_days_machine_dataset.csv
+datasets/extended_training_dataset.csv
+datasets/long_life_machine_dataset.csv
 ```
 
-Generated few-days dataset:
+`machine_vibration_training_dataset.csv`
+
+Primary training dataset for the default Ridge RUL model.
+
+`few_days_machine_dataset.csv`
+
+Default live replay dataset used by Hermes dashboard.
+
+`extended_training_dataset.csv`
+
+Long-life training data generated by simulator.
+
+`long_life_machine_dataset.csv`
+
+Long-life test/replay data.
+
+When the simulator is run, it may create numbered history files such as:
 
 ```text
-datasets/few_days_machine_dataset_1.csv
+few_days_machine_dataset_1.csv
+few_days_machine_dataset_7.csv
+```
+
+These are generated datasets, not required source files. They are useful only when you intentionally want to compare multiple simulated scenarios.
+
+## 8. How To Use Simulator Data
+
+From command line:
+
+```powershell
+python data_simulator.py few-days --profile warning --seed 42
+```
+
+From dashboard:
+
+1. Open Settings.
+2. Choose Simulator Profile.
+3. Enter seed.
+4. Click `Generate and Load Simulator Data`.
+
+This updates:
+
+```text
 datasets/few_days_machine_dataset.csv
 ```
 
-## 15. Output Files
+Then Hermes reloads the stream and starts predicting against the generated data.
 
-`results.json`
+## 9. How To Send Real Machine Data
 
-Summary values for dashboard.
+Send JSON to:
 
-`results/machine_failure_predictions.csv`
-
-Full row-by-row prediction table.
-
-`results/actual_vs_predicted.png`
-
-Graph comparing actual RUL and predicted RUL.
-
-## 16. Presentation Explanation
-
-Use this simple explanation:
-
-```text
-This project predicts machine remaining useful life from sensor readings.
-We use one Ridge Regression model to keep the system simple and explainable.
-The model learns from historical sensor data where actual remaining life is known.
-After training, it predicts remaining life for new machine readings.
-The dashboard shows status, breakdown time, remaining life, model name, and the prediction graph.
+```http
+POST http://127.0.0.1:5000/api/telemetry
 ```
 
-## 17. Final Short Summary
+Example PowerShell command:
 
-```text
-data_simulator.py       creates sample data
-app.py                  starts prediction
-maintenance_pipeline.py contains the main Ridge model logic
-dashboard.py            shows results
+```powershell
+$body = @{
+  vibration_rms_mm_s = 4.7
+  temperature_c = 68.2
+  rpm = 1450
+  acoustic_noise_db = 72.4
+  bearing_wear_percent = 58
+  lubricant_quality_percent = 43
+} | ConvertTo-Json
+
+Invoke-RestMethod -Uri "http://127.0.0.1:5000/api/telemetry" -Method Post -Body $body -ContentType "application/json"
 ```
 
-One-line summary:
+Required fields:
+
+- `vibration_rms_mm_s`
+- `temperature_c`
+- `rpm`
+
+Optional but valuable fields:
+
+- `acoustic_noise_db`
+- `bearing_wear_percent`
+- `lubricant_quality_percent`
+
+If a real plant uses different names, configure `config/machine_assets.json`.
+
+## 10. How Prediction Works
+
+The model is a Ridge Regression pipeline:
+
+```python
+make_pipeline(StandardScaler(), Ridge(alpha=1.0))
+```
+
+The feature builder creates rolling features for each sensor:
+
+- current value
+- difference from previous value
+- exponential moving average
+- rolling mean
+- rolling standard deviation
+- rolling minimum
+- rolling maximum
+
+Rolling windows:
 
 ```text
-The project uses machine sensor data and a Ridge Regression model to predict remaining useful life and show the result in a dashboard.
+5, 15, 30
 ```
+
+This helps the model understand both current state and recent trend.
+
+The model predicts normalized RUL. The system converts it back to hours using the training scale stored in `machine_breakdown_model.pkl`.
+
+## 11. How Hermes Decides Maintenance
+
+Hermes uses:
+
+- predicted RUL
+- anomaly score
+- failure probability
+- vibration
+- temperature
+- bearing wear
+- lubricant quality
+
+Decision levels:
+
+```text
+GREEN  -> Continue monitoring
+YELLOW -> Schedule inspection within next shift
+ORANGE -> Replace bearing and reduce operational load
+RED    -> Emergency shutdown required
+```
+
+This logic lives in:
+
+```text
+tools/industrial_tools.py
+```
+
+## 12. How Reports Work
+
+Dashboard:
+
+1. Open Reports.
+2. Click Generate Maintenance PDF.
+
+API:
+
+```http
+POST /api/report
+```
+
+Output:
+
+```text
+results/last_200_hours_maintenance_report.pdf
+```
+
+The PDF is generated dynamically. It is not stored as source code.
+
+## 13. How To Evaluate Model Credibility
+
+Dashboard:
+
+1. Open Settings.
+2. Click Evaluate Current Model.
+
+API:
+
+```http
+POST /api/model/evaluate
+```
+
+Example payload:
+
+```json
+{
+  "test_csv": "datasets/few_days_machine_dataset.csv"
+}
+```
+
+Metrics returned:
+
+- MAE
+- RMSE
+- R2
+- sample count
+
+Important: metrics are only production-credible when the test CSV is real unseen machine history, not synthetic simulator data.
+
+## 14. How To Retrain The Model
+
+API:
+
+```http
+POST /api/model/retrain
+```
+
+Example payload:
+
+```json
+{
+  "train_csv": "datasets/machine_vibration_training_dataset.csv"
+}
+```
+
+The training CSV must include a RUL target column such as:
+
+- `remaining_useful_life_hours`
+- `actual_remaining_life`
+- `rul`
+- `remaining_life`
+
+## 15. Production Deployment Notes
+
+This is currently:
+
+```text
+Industrial AI prototype with real-ingestion pathway.
+```
+
+It is not yet:
+
+```text
+Certified production control software.
+```
+
+To make it real-machine ready:
+
+1. Connect actual telemetry source: MQTT, OPC UA, Modbus TCP, Kafka, SCADA historian, Azure IoT Hub, AWS IoT SiteWise.
+2. Map plant tags in `config/machine_assets.json`.
+3. Collect real historical machine data.
+4. Add maintenance events and confirmed failure labels.
+5. Retrain per asset type.
+6. Evaluate on unseen real timelines.
+7. Track false positives and false negatives.
+8. Add technician feedback.
+9. Keep Hermes recommendation-only until safety review approves automation.
+
+## 16. Removed Obsolete Files
+
+The following old/generated files were removed because they no longer belong to the current Hermes platform:
+
+- `dashboard.py` - old Streamlit dashboard replaced by Flask + `frontend/`
+- `project_templates.py` - old dashboard template generator
+- `debug_predictions.py` - old ad hoc debug script
+- `WORKING_DOCUMENTATION.md` - outdated Streamlit documentation
+- `results.json` - old generated dashboard summary
+- generated files under `results/`
+- `__pycache__/` folders
+
+## 17. Normal Development Commands
+
+Install:
+
+```powershell
+pip install -r requirements.txt
+```
+
+Run:
+
+```powershell
+python app.py
+```
+
+Generate simulator data:
+
+```powershell
+python data_simulator.py few-days --profile critical --seed 42
+```
+
+Compile-check Python:
+
+```powershell
+python -m compileall agent backend ingestion ml reports simulation tools app.py
+```
+
+Check frontend JavaScript:
+
+```powershell
+node --check frontend\app.js
+```
+
+## 18. Final Mental Model
+
+Think of the project in four layers:
+
+```text
+Ingestion Layer
+  config/, ingestion/, simulation/
+
+Intelligence Layer
+  ml/, tools/, agent/
+
+Service Layer
+  backend/, reports/
+
+Experience Layer
+  frontend/
+```
+
+The most important file is:
+
+```text
+agent/hermes_agent.py
+```
+
+because it ties together telemetry, prediction, tools, reasoning, decisions, alerts, reports, and dashboard state.

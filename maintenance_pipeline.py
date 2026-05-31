@@ -28,7 +28,6 @@ from project_paths import (
     ensure_project_dirs,
     resolve_input_path,
 )
-from project_templates import DASHBOARD_CODE
 
 TARGET_CANDIDATES = (
     "actual_remaining_life",
@@ -568,7 +567,7 @@ def clean_generated_files() -> None:
 
 
 def write_dashboard() -> None:
-    Path("dashboard.py").write_text(DASHBOARD_CODE, encoding="utf-8")
+    return None
 
 
 def run_prediction(args: argparse.Namespace) -> None:
@@ -683,7 +682,7 @@ def run_prediction(args: argparse.Namespace) -> None:
     for warning in warnings_list:
         print(f"Warning                  : {warning}")
     print(f"Actual vs predicted graph  : {RESULTS_DIR / 'actual_vs_predicted.png'}")
-    print("Dashboard command          : streamlit run dashboard.py")
+    print("Hermes dashboard command   : python app.py")
 
 
 if __name__ == "__main__":

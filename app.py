@@ -1,5 +1,5 @@
-from maintenance_pipeline import parse_args, run_prediction
+from backend.hermes_api import run
 
 
 if __name__ == "__main__":
-    run_prediction(parse_args())
+    run()

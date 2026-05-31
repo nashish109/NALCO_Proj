@@ -1,0 +1,1 @@
+"""Industrial telemetry ingestion adapters."""

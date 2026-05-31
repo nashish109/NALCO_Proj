@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LAST 200 HOURS | Industrial AI Operations</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="appShell">
+      <header class="topbar">
+        <button class="iconButton mobileOnly" id="menuButton" aria-label="Open navigation">
+          <span></span><span></span><span></span>
+        </button>
+        <div class="brand">
+          <div class="brandMark">L200</div>
+          <div>
+            <strong>LAST 200 HOURS</strong>
+            <span>Hermes Industrial AI Platform</span>
+          </div>
+        </div>
+        <div class="topbarMetrics" aria-label="Machine status summary">
+          <div><span>Status</span><strong id="topStatus">Stable</strong></div>
+          <div><span>RUL</span><strong id="topRul">-- h</strong></div>
+          <div><span>Risk</span><strong id="topRisk">--%</strong></div>
+          <div><span>Uptime</span><strong id="uptime">00:00:00</strong></div>
+        </div>
+        <div class="topbarActions">
+          <button class="secondaryButton" id="reportButton">Generate Report</button>
+          <button class="iconButton" aria-label="Notifications"><span class="dot" id="notificationDot"></span></button>
+          <button class="profileButton" aria-label="Operator profile">OP</button>
+        </div>
+      </header>
+
+      <aside class="sidebar" id="sidebar" aria-label="Primary navigation">
+        <nav>
+          <a class="active" href="#dashboard" data-view="dashboard"><span>OV</span>Dashboard</a>
+          <a href="#monitoring" data-view="monitoring"><span>LM</span>Live Monitoring</a>
+          <a href="#predictions" data-view="predictions"><span>PR</span>Predictions</a>
+          <a href="#analytics" data-view="analytics"><span>AN</span>Analytics</a>
+          <a href="#reports" data-view="reports"><span>RP</span>Reports</a>
+          <a href="#alerts" data-view="alerts"><span>AL</span>Alerts</a>
+          <a href="#settings" data-view="settings"><span>ST</span>Settings</a>
+        </nav>
+        <div class="sidebarFooter">
+          <small>Plant Line</small>
+          <strong>Assembly Cell A-17</strong>
+          <span id="sampleIndex">Sample #000</span>
+        </div>
+      </aside>
+
+      <main class="workspace">
+        <section class="pageHeader">
+          <div>
+            <p id="viewEyebrow">Enterprise Reliability Console</p>
+            <h1 id="viewTitle">Predictive Maintenance Overview</h1>
+            <span id="viewDescription">Autonomous monitoring, RUL prediction, failure simulation, and maintenance planning.</span>
+          </div>
+          <div id="globalAlert" class="statusPill healthy">INFO - Stable</div>
+        </section>
+
+        <section class="view activeView" data-view-panel="dashboard">
+        <section class="kpiGrid" aria-label="Key machine indicators">
+          <article class="card kpiCard healthCard">
+            <div class="cardTitle"><span>Machine Health</span><b id="healthDelta">Live</b></div>
+            <div class="gaugeWrap">
+              <canvas id="healthCanvas"></canvas>
+              <div class="gaugeValue"><strong id="healthValue">--%</strong><span>Health Index</span></div>
+            </div>
+          </article>
+
+          <article class="card kpiCard">
+            <div class="cardTitle"><span>Remaining Useful Life</span><b>Model</b></div>
+            <strong class="metricValue" id="rulValue">-- h</strong>
+            <div class="progressTrack"><div id="rulFill"></div></div>
+            <p class="metricCaption">Estimated operating window before intervention.</p>
+          </article>
+
+          <article class="card kpiCard">
+            <div class="cardTitle"><span>Failure Probability</span><b id="riskValue">--%</b></div>
+            <strong class="metricValue" id="riskMetric">--%</strong>
+            <div class="progressTrack riskTrack"><div id="riskFill"></div></div>
+            <p class="metricCaption">Composite risk from RUL, vibration, thermal load, and anomaly score.</p>
+          </article>
+
+          <article class="card kpiCard recommendationCard">
+            <div class="cardTitle"><span>Maintenance Recommendation</span><b id="decisionPriority">INFO</b></div>
+            <strong id="decisionText">Awaiting Hermes decision...</strong>
+            <p id="decisionRationale">The agent is evaluating machine telemetry.</p>
+          </article>
+        </section>
+
+        <section class="contentGrid">
+          <div class="primaryColumn">
+            <article class="card chartCard">
+              <div class="cardTitle">
+                <span>Live Sensor Streams</span>
+                <b>Synchronized feed</b>
+              </div>
+              <canvas id="sensorCanvas"></canvas>
+            </article>
+
+            <article class="card chartCard">
+              <div class="cardTitle">
+                <span>Failure Prediction Timeline</span>
+                <b id="deathLine">-- h</b>
+              </div>
+              <canvas id="timelineCanvas"></canvas>
+            </article>
+
+            <article class="card">
+              <div class="cardTitle">
+                <span>Live Sensor Readings</span>
+                <b>Current frame</b>
+              </div>
+              <div class="sensorGrid" id="sensorGrid"></div>
+            </article>
+
+            <article class="card">
+              <div class="cardTitle">
+                <span>Risk Analysis</span>
+                <b>Operational factors</b>
+              </div>
+              <div class="riskMatrix" id="riskMatrix"></div>
+            </article>
+          </div>
+
+          <aside class="insightsColumn">
+            <article class="card insightsCard">
+              <div class="cardTitle"><span>Hermes Agent Insights</span><b>Reasoning</b></div>
+              <div id="thoughts" class="thoughts"></div>
+            </article>
+
+            <article class="card">
+              <div class="cardTitle"><span>Alert Timeline</span><b>Latest</b></div>
+              <div id="alerts" class="eventList"></div>
+            </article>
+
+            <article class="card">
+              <div class="cardTitle"><span>Recent Decisions</span><b>Agent</b></div>
+              <div id="decisions" class="eventList"></div>
+            </article>
+
+            <article class="card">
+              <div class="cardTitle"><span>System Logs</span><b>Live</b></div>
+              <div class="logStream" id="logStream"></div>
+            </article>
+          </aside>
+        </section>
+        </section>
+
+        <section class="view" data-view-panel="monitoring">
+          <div class="splitView">
+            <article class="card chartCard wideCard">
+              <div class="cardTitle"><span>Live Monitoring Stream</span><b>Realtime telemetry</b></div>
+              <canvas id="monitoringCanvas"></canvas>
+            </article>
+            <article class="card">
+              <div class="cardTitle"><span>Current Sensor Register</span><b>Latest sample</b></div>
+              <div class="dataTableWrap">
+                <table class="dataTable">
+                  <thead><tr><th>Signal</th><th>Value</th><th>Unit</th></tr></thead>
+                  <tbody id="sensorTable"></tbody>
+                </table>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="view" data-view-panel="predictions">
+          <div class="splitView">
+            <article class="card chartCard wideCard">
+              <div class="cardTitle"><span>RUL Forecast</span><b id="predictionHorizon">Failure horizon</b></div>
+              <canvas id="predictionCanvas"></canvas>
+            </article>
+            <article class="card">
+              <div class="cardTitle"><span>Prediction Summary</span><b>Hermes model</b></div>
+              <div class="summaryList" id="predictionSummary"></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="view" data-view-panel="analytics">
+          <div class="splitView">
+            <article class="card">
+              <div class="cardTitle"><span>Risk Factor Contribution</span><b>Composite model</b></div>
+              <div class="riskMatrix" id="analyticsRiskMatrix"></div>
+            </article>
+            <article class="card chartCard">
+              <div class="cardTitle"><span>Health / Risk Trend</span><b>Rolling window</b></div>
+              <canvas id="analyticsCanvas"></canvas>
+            </article>
+          </div>
+        </section>
+
+        <section class="view" data-view-panel="reports">
+          <div class="splitView">
+            <article class="card">
+              <div class="cardTitle"><span>Maintenance Reports</span><b>PDF export</b></div>
+              <p class="metricCaption">Generate an executive maintenance report containing current machine state, RUL, anomaly summary, failure explanation, maintenance recommendation, and future risk estimate.</p>
+              <button class="primaryAction" id="reportButtonSecondary">Generate Maintenance PDF</button>
+              <div class="summaryList" id="reportSummary"></div>
+            </article>
+            <article class="card">
+              <div class="cardTitle"><span>Report Contents</span><b>Included sections</b></div>
+              <div class="checkList">
+                <span>Current machine state</span>
+                <span>Remaining useful life</span>
+                <span>Anomaly and failure explanation</span>
+                <span>Maintenance recommendation</span>
+                <span>Future degradation estimate</span>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="view" data-view-panel="alerts">
+          <div class="splitView">
+            <article class="card">
+              <div class="cardTitle"><span>Alert Management</span><b>Operational timeline</b></div>
+              <div id="alertsPageList" class="eventList tallList"></div>
+            </article>
+            <article class="card">
+              <div class="cardTitle"><span>Alert Policy</span><b>Thresholds</b></div>
+              <div class="summaryList">
+                <div><b>INFO</b><span>Nominal operation with continuous monitoring.</span></div>
+                <div><b>WARNING</b><span>Inspection or load reduction may be required.</span></div>
+                <div><b>CRITICAL</b><span>Emergency shutdown and report generation required.</span></div>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="view" data-view-panel="settings">
+          <div class="settingsLayout">
+            <article class="card">
+              <div class="cardTitle"><span>System Settings</span><b>Operations controls</b></div>
+              <div class="settingsGrid">
+                <label><span>Refresh Interval</span><select id="refreshInterval"><option value="5000">5 seconds</option><option value="3000">3 seconds</option><option value="10000">10 seconds</option></select></label>
+                <label><span>Trend Window</span><select id="trendWindow"><option value="30">Last 30 samples</option><option value="45">Last 45 samples</option><option value="60">Last 60 samples</option></select></label>
+                <label><span>Dashboard Density</span><select id="dashboardDensity"><option value="comfortable">Comfortable</option><option value="compact">Compact</option></select></label>
+                <label><span>Monitoring State</span><button class="settingsButton" id="pauseButton" type="button">Pause Live Updates</button></label>
+                <label><span>Machine Asset</span><input value="Assembly Cell A-17" readonly /></label>
+                <label><span>Agent Mode</span><input value="Autonomous monitoring" readonly /></label>
+              </div>
+            </article>
+            <article class="card">
+              <div class="cardTitle"><span>Platform Status</span><b>Connected</b></div>
+              <div class="summaryList" id="settingsSummary"></div>
+            </article>
+            <article class="card">
+              <div class="cardTitle"><span>Simulator and Model Ops</span><b>Prototype controls</b></div>
+              <div class="settingsGrid">
+                <label><span>Simulator Profile</span><select id="simulatorProfile"><option value="healthy">Healthy</option><option value="watch">Watch</option><option value="warning" selected>Warning</option><option value="critical">Critical</option></select></label>
+                <label><span>Simulator Seed</span><input id="simulatorSeed" type="number" value="42" /></label>
+                <button class="settingsButton" id="generateSimulatorButton" type="button">Generate and Load Simulator Data</button>
+                <button class="settingsButton" id="evaluateModelButton" type="button">Evaluate Current Model</button>
+              </div>
+              <div class="summaryList" id="modelOpsSummary"></div>
+            </article>
+            <article class="card">
+              <div class="cardTitle"><span>Alert Thresholds</span><b>Read-only policy</b></div>
+              <div class="thresholdGrid">
+                <div><span>INFO</span><strong>&lt; 42% anomaly</strong></div>
+                <div><span>WARNING</span><strong>RUL &lt; 72h</strong></div>
+                <div><span>HIGH RISK</span><strong>Risk &gt; 66%</strong></div>
+                <div><span>CRITICAL</span><strong>RUL &lt; 8h</strong></div>
+              </div>
+            </article>
+            <article class="card">
+              <div class="cardTitle"><span>Data Source and Integration</span><b>Sensor stream</b></div>
+              <div class="summaryList" id="integrationSummary"></div>
+            </article>
+          </div>
+        </section>
+      </main>
+    </div>
+    <div class="overlay" id="overlay"></div>
+    <script src="/app.js"></script>
+  </body>
+</html>
